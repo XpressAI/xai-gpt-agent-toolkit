@@ -10,12 +10,16 @@ Welcome to the **GPT Agent Toolkit**! This toolkit provides a comprehensive set 
 
 ## Table of Contents
 - [Features](#features)
+- [Ideas](#ideas)
 - [Getting Started](#getting-started)
+  - [Shameless Plug](#shameless-plug)
   - [Prerequisites](#prerequisites)
+  - [Software Prerequisites](#software-prerequisites)
+  - [API Prerequisites](#api-prerequisites)
+  - [Create a project](#create-a-project)
   - [Installation](#installation)
 - [Usage](#usage)
   - [Basic Usage](#basic-usage)
-  - [Customizing Prompts](#customizing-prompts)
 - [Contributing](#contributing)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
