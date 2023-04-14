@@ -569,7 +569,6 @@ class VectoMemory(Component):
         from vecto import Vecto
 
         api_key = os.getenv("VECTO_API_KEY") if self.api_key.value is None else self.api_key.value
-        usage_key = os.getenv("VECTO_USAGE_KEY")
 
         headers = {'Authorization': 'Bearer ' + api_key}
         response = requests.get("https://api.vecto.ai/api/v0/account/space", headers=headers)
@@ -577,7 +576,7 @@ class VectoMemory(Component):
             raise Exception(f"Failed to get vector space list: {response.text}")
         for space in response.json():
             if space['name'] == self.vector_space.value:
-                vs = Vecto(usage_key, space['id'])
+                vs = Vecto(api_key, space['id'])
                 if self.initialize.value:
                     vs.delete_vector_space_entries()
                 self.memory.value = VectoMemoryImpl(vs)
