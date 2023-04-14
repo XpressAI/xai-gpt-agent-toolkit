@@ -1,5 +1,6 @@
 import abc
 from collections import deque
+import re
 from dotenv import load_dotenv
 import os
 import openai
@@ -114,7 +115,19 @@ def get_sorted_context(memory: Memory, query: str, n: int):
     sorted_results = sorted(results.results, key=lambda x: x.similarity, reverse=True)
     return [(str(item.attributes['task'])) for item in sorted_results]
 
+
+def extract_task_number(task_id, task_list):
+    if isinstance(task_id, int):
+        return task_id
     
+    matches = re.findall(r'\d+', task_id)
+    if matches:
+        return int(matches[0])
+    else:
+        # fallback if we match nothing.
+        return len(task_list) + 1
+
+
 @xai_component
 class TaskCreatorAgent(Component):
     objective: InCompArg[str]
@@ -141,7 +154,7 @@ class TaskCreatorAgent(Component):
         print("New tasks: ", new_tasks)
 
         task_id = self.task.value["task_id"]
-        task_id_counter = int(task_id.replace("#", "")) if isinstance(task_id, str) else task_id
+        task_id_counter = extract_task_number(task_id, self.task_list)
         ret = []
         for task_name in new_tasks:
             task_id_counter += 1
