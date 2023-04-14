@@ -66,7 +66,7 @@ class Memory(abc.ABC):
         pass
 
 
-def run_tool(tool_code: str, tools: list[dict]) -> str:
+def run_tool(tool_code: str, tools: list) -> str:
     if tool_code is None:
         return ""
     
@@ -100,8 +100,11 @@ def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int 
                 return result.stdout.strip()
             else:
                 raise Exception(f"Unknown model {model}")
-        except openai.error.RateLimitError | openai.error.ServiceUnavailableError:
+        except openai.error.RateLimitError:
             print("Rate limit error, sleeping for 10 seconds...")
+            time.sleep(10)
+        except openai.error.ServiceUnavailableError:
+            print("Service unavailable error, sleeping for 10 seconds...")
             time.sleep(10)
         else:
             break
@@ -619,7 +622,7 @@ class Toolbelt(Component):
     tool3: InArg[dict]
     tool4: InArg[dict]
     tool5: InArg[dict]
-    toolbelt_spec: OutArg[list[dict]]
+    toolbelt_spec: OutArg[list]
 
     def execute(self, ctx) -> None:
         spec = []
