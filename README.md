@@ -6,6 +6,8 @@
 
 Welcome to the **GPT Agent Toolkit**! This toolkit provides a comprehensive set of Xircuits components that allow you to experiment with and create Collaborative Large Language Model-based automatons (Agents) in the style of BabyAGI and AutoGPT. By default, the toolkit comes with BabyAGI agents, but it is designed to be easily customizable with your own prompts.
 
+![demo.gif](BabyAGI Sample Demo)
+
 ## Table of Contents
 - [Features](#features)
 - [Getting Started](#getting-started)
@@ -25,7 +27,18 @@ Welcome to the **GPT Agent Toolkit**! This toolkit provides a comprehensive set 
 - Support for both OpenAI and LLAMA models
 - Open-source and community-driven
 
+## Ideas
+
+Here are some ideas that you could try relatively easily with Xircuits.
+
+1. Make a critic agent that updates the objective to be more effective.
+2. Have the agents produce a status report on Slack and update the objective based on your reply.
+3. Upload a large image dataset on Vecto with image descriptions giving your agent sight.
+4. Connect to Whisper and have a daily standup meeting with the agent.
+5. Make 2 BabyAGIs and have 1 critic decide which action to actually perform.
+
 ## Getting Started
+
 These instructions will help you set up the GPT Agent Toolkit on your local machine.
 
 This is a component library so you don't need to clone this directly. Instead install
@@ -144,6 +157,7 @@ xircuits
 3. Use the printed out URLs to browse to http://localhost:8888/lab and double click the babyagi.xiruits file.
 
 4. Click play to watch it go and try to make the world a better place.
+
 
 ## Contributing
 
