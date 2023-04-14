@@ -6,7 +6,7 @@
 
 Welcome to the **GPT Agent Toolkit**! This toolkit provides a comprehensive set of Xircuits components that allow you to experiment with and create Collaborative Large Language Model-based automatons (Agents) in the style of BabyAGI and AutoGPT. By default, the toolkit comes with BabyAGI agents, but it is designed to be easily customizable with your own prompts.
 
-![demo.gif](BabyAGI Sample Demo)
+![BabyAGI demo](https://github.com/XpressAI/xai-gpt-agent-toolkit/blob/main/demo.gif)
 
 ## Table of Contents
 - [Features](#features)
