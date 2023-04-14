@@ -116,8 +116,9 @@ pip install git+https://github.com/XpressAI/vecto-python-sdk.git
 
 ```bash
 
+git init .
 git submodule add https://github.com/XpressAI/xai-openai xai_components/xai_openai
-git submodule add https://github.com/username/GPT-Agent-Toolkit.git xai_components/xai_gpt_agent_toolkit
+git submodule add https://github.com/XpressAI/xai-gpt-agent-toolkit.git xai_components/xai_gpt_agent_toolkit
 
 pip install -r xai_components/xai_openai/requirements.txt
 pip install -r xai_components/xai_gpt_agent_toolkit/requirements.txt
