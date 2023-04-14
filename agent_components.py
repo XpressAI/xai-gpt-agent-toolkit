@@ -1,5 +1,6 @@
 import abc
 from collections import deque
+from dotenv import load_dotenv
 import os
 import openai
 import requests
@@ -7,6 +8,8 @@ import sqlite3
 import subprocess
 import time
 from xai_components.base import InArg, OutArg, InCompArg, Component, BaseComponent, xai_component
+
+load_dotenv()
 
 DEFAULT_EXECUTOR_PROMPT = """
 You are an AI who performs one task based on the following objective: {objective}.
@@ -368,29 +371,6 @@ class SqliteTool(Component):
         
         return res
 
-@xai_component
-class GoogleDriveTool(Component):
-    folder: InArg[str]
-    tool_spec: OutArg[str]
-
-    def execute(self, ctx) -> None:
-        pass
-
-@xai_component
-class GithubTool(Component):
-    repo: InArg[str]
-    tool_spec: OutArg[str]
-
-    def execute(self, ctx) -> None:
-        pass
-
-@xai_component
-class GoogleSheetsTool(Component):
-    sheet: InArg[str]
-    tool_spec: OutArg[str]
-
-    def execute(self, ctx) -> None:
-        pass
 
 TOOL_SPEC_PYTHON = """
 Execute python code in a virtual environment.  
@@ -463,7 +443,8 @@ class ExecutePythonTool(Component):
         print(f"Done running tool python-exec: Returned {output}")
         
         return output
-        
+
+
 TOOL_SPEC_PROMPT_USER = """
 Prompt the user for input with this tool.
 Example: TOOL: prompt-user
@@ -472,6 +453,7 @@ Hello would you like to play a game?
 prompt-user OUTPUT:
 Yes I would.
 """
+
 
 @xai_component
 class PromptUserTool(Component):
@@ -492,6 +474,7 @@ class PromptUserTool(Component):
         res = input(">")
         return res
 
+
     
 TOOL_SPEC_SCRATCH_PAD = """
 Your internal monologue. Written to yourself in second-person. 
@@ -499,6 +482,7 @@ Write out any notes that should help you with the progress of your task.
 Example: TOOL: scratch-pad
 Thoughts go here.
 """
+
 
 @xai_component
 class ScratchPadTool(Component):
@@ -539,8 +523,6 @@ class ScratchPadTool(Component):
             f.write(tool_code[len('scratch-pad'):])
             
         return ""
-
-
 
 
 class VectoMemoryImpl(Memory):
@@ -600,6 +582,7 @@ class VectoMemory(Component):
         if not self.memory.value:
             raise Exception(f"Could not find vector space with name {self.vector_space.value}")
 
+
 @xai_component
 class PineconeMemory(Component):
     api_key: InArg[str]
@@ -628,13 +611,6 @@ class PineconeMemory(Component):
 
         self.memory.value = PineconeMemoryImpl(index, self.namespace.value)
 
-@xai_component
-class GMailTool(Component):
-    account: InArg[str]
-    tool_spec: OutArg[str]
-
-    def execute(self, ctx) -> None:
-        pass
 
 @xai_component
 class Toolbelt(Component):
@@ -662,14 +638,6 @@ class Toolbelt(Component):
 
         self.toolbelt_spec.value = spec
 
-@xai_component
-class SendEmail(Component):
-    email: InArg[str]
-    subject: InArg[str]
-    body: InArg[str]
-
-    def execute(self, ctx) -> None:
-        pass
 
 @xai_component
 class Sleep(Component):
