@@ -78,8 +78,7 @@ OPENAI_ORG=<Your OpenAI Org (if you have one)>
 
 For Vecto users:
 ```
-VECTO_API_KEY=<A ACCOUNT_MANAGEMENT Vecto key>
-VECTO_USAGE_KEY=<A Usage Vecto key with access to the vector spaces you want to use>
+VECTO_API_KEY=<An ACCOUNT_MANAGEMENT Vecto key>
 ```
 
 For Pinecone users:
