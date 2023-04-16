@@ -51,7 +51,7 @@ Xircuits and install this component library into it.
 
 ### Shameless plug
 
-If the following is too much work or too complicated.  Sign up to the Xpress AI Platform waistlist
+If the following is too much work or too complicated.  Sign up to the Xpress AI Platform waitlist
 to get access to a single app that has everything you need to get started.
 
 [Join the Xpress AI Platform Waitlist](https://xpress.ai/join-waitlist)
