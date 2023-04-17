@@ -1,14 +1,17 @@
 import abc
 from collections import deque
 import re
+from typing import NamedTuple
+
 from dotenv import load_dotenv
+import numpy as np
 import os
 import openai
 import requests
 import sqlite3
 import subprocess
 import time
-from xai_components.base import InArg, OutArg, InCompArg, Component, BaseComponent, xai_component
+from xai_components.base import InArg, OutArg, InCompArg, Component, xai_component
 
 load_dotenv()
 
@@ -59,6 +62,7 @@ Return the result as a numbered list, like:
 Start the task list with number {next_task_id}.
 """
 
+
 class Memory(abc.ABC):
     def query(self, query: str, n: int) -> list:
         pass
@@ -94,6 +98,19 @@ def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int 
                     stop=["OUTPUT", ],
                 )
                 return response.choices[0].message.content.strip()
+            elif model.startswith("rwkv"):
+                # Use proxy.
+                if not openai.proxy: raise Exception("No proxy set")
+                messages = [{"role": "system", "content": prompt}]
+                response = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    n=1,
+                    stop=["OUTPUT", ],
+                )
+                return response.choices[0].message.content.strip()
             elif model.startswith("llama"):
                 # Spawn a subprocess to run llama.cpp
                 cmd = ["llama/main", "-p", prompt]
@@ -110,9 +127,14 @@ def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int 
         else:
             break
 
+
 def get_sorted_context(memory: Memory, query: str, n: int):
     results = memory.query(query, n)
-    sorted_results = sorted(results.results, key=lambda x: x.similarity, reverse=True)
+    sorted_results = sorted(
+        results,
+        key=lambda x: x.similarity if getattr(x, 'similarity', None) else x.score,
+        reverse=True
+    )
     return [(str(item.attributes['task'])) for item in sorted_results]
 
 
@@ -546,11 +568,18 @@ class VectoMemoryImpl(Memory):
         self.vs = vs
 
     def query(self, query: str, n: int) -> list:
-        return self.vs.lookup(query, 'TEXT', n)
+        return self.vs.lookup(query, 'TEXT', n).results
     def add(self, id: str, text: str, metadata: dict) -> None:
         from vecto import vecto_toolbelt
 
         vecto_toolbelt.ingest_text(self.vs, [text], [metadata])
+
+
+def get_ada_embedding(text):
+    s = text.replace("\n", " ")
+    return openai.Embedding.create(input=[s], model="text-embedding-ada-002")[
+        "data"
+    ][0]["embedding"]
 
 
 class PineconeMemoryImpl(Memory):
@@ -558,17 +587,64 @@ class PineconeMemoryImpl(Memory):
         self.index = index
         self.namespace = namespace
 
-    def get_ada_embedding(text):
-        text = text.replace("\n", " ")
-        return openai.Embedding.create(input=[text], model="text-embedding-ada-002")[
-            "data"
-        ][0]["embedding"]
+    def query(self, query: str, n: int) -> list:
+        return self.index.query(get_ada_embedding(query), top_k=n, include_metadata=True, namespace=self.namespace)
+
+    def add(self, vector_id: str, text: str, metadata: dict) -> None:
+        self.index.upsert([(vector_id, get_ada_embedding(text), metadata)], namespace=self.namespace)
+
+
+class NumpyQueryResult(NamedTuple):
+    id: str
+    similarity: float
+    attributes: dict
+
+
+class NumpyMemoryImpl(Memory):
+    def __init__(self, vectors=None, ids=None, metadata=None):
+        self.vectors = vectors
+        self.ids = ids
+        self.metadata = metadata
 
     def query(self, query: str, n: int) -> list:
-        return self.index.query(self.get_ada_embedding(query), top_k=n, include_metadata=True, namespace=self.namespace)
+        if self.vectors is None:
+            return []
+        if isinstance(self.vectors, list) and len(self.vectors) > 1:
+            self.vectors = np.vstack(self.vectors)
 
-    def add(self, id: str, text: str, metadata: dict) -> None:
-        self.index.upsert([(id, self.get_ada_embedding(text), metadata)], namespace=self.namespace)
+        top_k = min(self.vectors.shape[0], n)
+        query_vector = get_ada_embedding(query)
+        similarities = self.vectors @ query_vector
+        indices = np.argpartition(similarities, -top_k)[-top_k:]
+        return [
+            NumpyQueryResult(
+                self.ids[i],
+                similarities[i],
+                self.metadata[i]
+            )
+            for i in indices
+        ]
+
+    def add(self, vector_id: str, text: str, metadata: dict) -> None:
+        if isinstance(self.vectors, list) and len(self.vectors) > 1:
+            self.vectors = np.vstack(self.vectors)
+
+        if self.vectors is None:
+            self.vectors = np.array(get_ada_embedding(text)).reshape((1, -1))
+            self.ids = [vector_id]
+            self.metadata = [metadata]
+        else:
+            self.ids.append(vector_id)
+            self.vectors = np.vstack([self.vectors, np.array(get_ada_embedding(text))])
+            self.metadata.append(metadata)
+
+
+@xai_component
+class NumpyMemory(Component):
+    memory: OutArg[Memory]
+
+    def execute(self, ctx) -> None:
+        self.memory.value = NumpyMemoryImpl()
 
 
 @xai_component
@@ -576,7 +652,7 @@ class VectoMemory(Component):
     api_key: InArg[str]
     vector_space: InCompArg[str]
     initialize: InCompArg[bool]
-    memory: OutArg[object]
+    memory: OutArg[Memory]
 
     def execute(self, ctx) -> None:
         from vecto import Vecto
@@ -623,7 +699,6 @@ class PineconeMemory(Component):
         if self.initialize.value:
             pinecone.delete(deleteAll='true', namespace=self.namespace.value)
 
-
         self.memory.value = PineconeMemoryImpl(index, self.namespace.value)
 
 
@@ -649,7 +724,6 @@ class Toolbelt(Component):
             spec.append(self.tool4.value)
         if self.tool5.value:
             spec.append(self.tool5.value)
-
 
         self.toolbelt_spec.value = spec
 
