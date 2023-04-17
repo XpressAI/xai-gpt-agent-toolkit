@@ -76,6 +76,9 @@ OPENAI_API_KEY=<Your OpenAI API Key here>
 OPENAI_ORG=<Your OpenAI Org (if you have one)>
 ```
 
+With the latest version you no longer need Vector or Pinecone to get started, but if you want to use them
+add one of the following credentials.
+
 For Vecto users:
 ```
 VECTO_API_KEY=<An ACCOUNT_MANAGEMENT Vecto key>
