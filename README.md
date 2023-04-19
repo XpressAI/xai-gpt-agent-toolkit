@@ -145,6 +145,13 @@ pip install -r xai_components/xai_gpt_agent_toolkit/requirements.txt
 
 ```
 
+5. Run the playwright installer to enable the Browser tool:
+
+```bash
+playwright install
+```
+
+
 ## Usage
 
 ### Basic Usage

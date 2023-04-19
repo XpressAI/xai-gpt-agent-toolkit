@@ -3,6 +3,7 @@ from collections import deque
 import re
 from typing import NamedTuple
 
+import json
 from dotenv import load_dotenv
 import numpy as np
 import os
@@ -18,12 +19,10 @@ load_dotenv()
 DEFAULT_EXECUTOR_PROMPT = """
 You are an AI who performs one task based on the following objective: {objective}.
 Take into account these previously completed tasks: {context}
-Scratch Path:
-{scratch_pad}
-Your task: {task}
-Your tools: {tools}
-You can use a tool by writing TOOL: TOOL_NAME in a single line. then the arguments of the tool (if any)
-For example, to use the python-exec tool, write
+*Your thoughts*: {scratch_pad}
+*Your task*: {task}
+*Your tools*: {tools}
+You can use a tool by writing TOOL: TOOL_NAME in a single line. then the arguments of the tool (if any) For example, to use the python-exec tool, write
 TOOL: python-exec
 ```
 print('Hello world!')
@@ -50,6 +49,7 @@ This result was based on this task description: {task_name}.
 These are incomplete tasks: {task_list}.
 Based on the result, create new tasks to be completed by the AI system that do not overlap with incomplete tasks.
 Return the tasks as an array.
+If the objective is achieved return "FINISHED"
 """
 
 DEFAULT_TASK_PRIORITIZER_PROMPT = """
@@ -79,12 +79,17 @@ def run_tool(tool_code: str, tools: list) -> str:
 
     for tool in tools:
         if tool_code.startswith(tool["name"]):
-            ret += tool["instance"].run_tool(tool_code)
+            if tool["instance"]:
+                ret += tool["instance"].run_tool(tool_code)
+                #tool["instance"] = None
 
     return ret
 
 
-def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int = 100):
+def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int = 500):
+    #print("**** LLM_CALL ****")
+    #print(prompt)
+    
     while True:
         try:
             if model == 'gpt-3.5-turbo' or model == 'gpt-4':
@@ -135,7 +140,7 @@ def get_sorted_context(memory: Memory, query: str, n: int):
         key=lambda x: x.similarity if getattr(x, 'similarity', None) else x.score,
         reverse=True
     )
-    return [(str(item.attributes['task'])) for item in sorted_results]
+    return [(str(item.attributes['task']) + ":" + str(item.attributes['result'])) for item in sorted_results]
 
 
 def extract_task_number(task_id, task_list):
@@ -174,6 +179,9 @@ class TaskCreatorAgent(Component):
         response = llm_call(self.model.value, prompt)
         new_tasks = response.split('\n')
         print("New tasks: ", new_tasks)
+        if "FINISHED" in new_tasks:
+            self.new_tasks.value = []
+            return
 
         task_id = self.task.value["task_id"]
         task_id_counter = extract_task_number(task_id, self.task_list)
@@ -251,7 +259,7 @@ class TaskExecutorAgent(Component):
             "objective": self.objective.value,
             "context": context,
             "task": self.task.value,
-            "tools": self.tools.value
+            "tools": [tool['spec'] for tool in self.tools.value]
         })
         result = llm_call(self.model.value, prompt, 0.7, 2000)
 
@@ -308,7 +316,7 @@ class ToolRunner(Component):
         tools = self.action.value.split("TOOL: ")
         result = self.action.value + "\n"
         for tool in tools:
-            result += run_tool(tool, self.tools.value)
+            result += run_tool(tool, self.tools.value.copy())
 
         task = self.task.value
         self.memory.value.add(
@@ -409,10 +417,191 @@ class SqliteTool(Component):
         
         return res
 
+    
+TOOL_SPEC_BROWSER = """
+Shows the user which step to perform in a browser and outputs the resulting HTML. Use by writing the commands within markdown code blocks. Do not assume that elements are on the page, use the tool to discover the correct selectors. Perform only the action related to the task. You cannot define variables with the browser tool. only write_file(filename, selector)
+
+Example: TOOL: browser
+```
+goto("http://google.com")
+fill('[title="search"]', 'my search query')
+click('input[value="Google Search"]')
+```
+browser OUTPUT:
+<html ....>
+"""
+
+@xai_component
+class BrowserTool(Component):
+    cdp_address: InArg[str]
+    tool_spec: OutArg[dict]
+
+    def execute(self, ctx) -> None:
+        if not 'tools' in ctx:
+            ctx['tools'] = {}
+        spec = {
+            'name': 'browser',
+            'spec': TOOL_SPEC_BROWSER,
+            'instance': self
+        }
+
+        self.chrome = None
+        self.playwright = None
+        self.page = None
+        self.tool_spec.value = spec
+
+    def run_tool(self, tool_code) -> str:
+        print(f"Running tool browser")
+        lines = tool_code.splitlines()
+        code = []
+        include = False
+        any = False
+        for line in lines[1:]:
+            if "```" in line and include == False:
+                include = True
+                any = True
+                continue
+            elif "```" in line and include == True:
+                include = False
+                continue
+            elif "TOOL: browser" in line:
+                continue
+            elif "OUTPUT" in line:
+                break
+            elif include:
+                code.append(line + "\n")
+        if not any:
+            for line in lines[1:]:
+                code.append(line + "\n")
+        
+        res = ""
+        try:
+            import playwright
+            from playwright.sync_api import sync_playwright
+            
+            if not self.chrome:
+                self.playwright = sync_playwright().__enter__()
+                self.chrome = self.playwright.chromium.connect_over_cdp(self.cdp_address.value)
+
+            if not self.page:
+                if len(self.chrome.contexts) > 0:
+                    self.page = self.chrome.contexts[0].new_page()
+                    self.page.set_default_timeout(3000)
+                else:
+                    self.page = self.chrome.new_context().new_page()
+                    self.page.set_default_timeout(3000)
+
+            self.page.save_screenshot = self.page.screenshot
+            def write_file(file, selector):
+                with open(file, "w") as f:
+                    f.write(self.page.inner_text(selector))
+            
+            self.page.write_file = write_file
+            self.page.save_text = write_file
+            self.page.save_to_file = write_file
+            for action in code:
+                if not action.startswith("#"):
+                    eval("self.page." + action)
+                    
+            res += self.page.content()[:4000]
+            #browser.close()
+        except Exception as e:
+            res += str(e)
+        
+        print("*** PAGE CONTENT ***")
+        print(res)
+        
+        return res
+
+TOOL_SPEC_NLP = """
+NLP tool provides methods to summarize, extract, classify, ner or translate informtaion on the current page.
+To use use one of the words above followed by any arguments and finally a CSS selector.
+TOOL: NLP, summarize div[id="foo"]
+NLP OUTPUT:
+Summary appears here.
+"""
+
+@xai_component
+class NlpTool(Component):
+    cdp_address: InArg[str]
+    tool_spec: OutArg[dict]
+
+    def execute(self, ctx) -> None:
+        if not 'tools' in ctx:
+            ctx['tools'] = {}
+        spec = {
+            'name': 'browser',
+            'spec': TOOL_SPEC_BROWSER,
+            'instance': self
+        }
+
+        self.chrome = None
+        self.playwright = None
+        self.page = None
+        self.tool_spec.value = spec
+
+    def run_tool(self, tool_code) -> str:
+        print(f"Running tool browser")
+        lines = tool_code.splitlines()
+        code = []
+        include = False
+        any = False
+        for line in lines[1:]:
+            if "```" in line and include == False:
+                include = True
+                any = True
+                continue
+            elif "```" in line and include == True:
+                include = False
+                continue
+            elif "TOOL: browser" in line:
+                continue
+            elif "OUTPUT" in line:
+                break
+            elif include:
+                code.append(line + "\n")
+        if not any:
+            for line in lines[1:]:
+                code.append(line + "\n")
+        
+        res = ""
+        try:
+            import playwright
+            from playwright.sync_api import sync_playwright
+            
+            if not self.chrome:
+                self.playwright = sync_playwright().__enter__()
+                self.chrome = self.playwright.chromium.connect_over_cdp(self.cdp_address.value)
+
+            if not self.page:
+                if len(self.chrome.contexts) > 0:
+                    self.page = self.chrome.contexts[0].pages[0]
+                    self.page.set_default_timeout(3000)
+                else:
+                    self.page = self.chrome.new_context().new_page()
+                    self.page.set_default_timeout(3000)
+
+            
+            for action in code:
+                if not action.startswith("#"):
+                    content = self.page.inner_text(action.split(" ")[-1])
+                    prompt = action + "\n" + action.split(" ")[-1] + " is: \n---\n"
+                    res += action + "OUTPUT:\n"
+                    res += llm_call("gpt-3.5-turbo", prompt, 0.0, 100)
+                    res += "\n"
+
+        except Exception as e:
+            res += str(e)
+        
+        print("*** PAGE CONTENT ***")
+        print(res)
+        
+        return res
 
 TOOL_SPEC_PYTHON = """
 Execute python code in a virtual environment.  
 Use by writing the code within markdown code blocks. 
+Automate the browser with playwright.  You *MUST* use the following code and avoid headless mode:`playwright.chromium.connect_over_cdp("http://localhost:9222")`
 The environment has the following pip libraries installed: {packages}
 Example: TOOL: python-exec
 ```
@@ -463,10 +652,15 @@ class ExecutePythonTool(Component):
         if not any:
             for line in lines[1:]:
                 code.append(line + "\n")
+        
+        code = [line.replace(".launch(headless=False)", '.connect_over_cdp("http://localhost:9222")') for 
+                line in code]
 
         print(f"Will run pip operations: {pip_operations}")
+        tool_code = '\n'.join(code)
         print(f"Will run the code: {tool_code}")
-        time.sleep(3)
+        
+        
         try:
             for pip_operation in pip_operations:
                 result = subprocess.run(pip_operation, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True, cwd=os.getcwd())
@@ -515,8 +709,7 @@ class PromptUserTool(Component):
 
     
 TOOL_SPEC_SCRATCH_PAD = """
-Your internal monologue. Written to yourself in second-person. 
-Write out any notes that should help you with the progress of your task.
+Your internal monologue. Written to yourself in second-person. Write out any notes that should help you with the progress of your task.
 Example: TOOL: scratch-pad
 Thoughts go here.
 """
@@ -734,3 +927,29 @@ class Sleep(Component):
 
     def execute(self, ctx) -> None:
         time.sleep(self.seconds.value)
+
+@xai_component
+class ReadFile(Component):
+    file_name: InCompArg[str]
+    content: OutArg[str]
+    
+    def execute(self, ctx) -> None:
+        s = ""
+        with open(self.file_name.value, "r") as f:
+            s = "\n".join(f.readlines())
+        self.content.value = s
+
+@xai_component
+class OutputAgentStatus(Component):
+    task_list: InCompArg[deque]
+    text: InArg[str]
+    results: InArg[str]
+    content: OutArg[str]
+    
+    def execute(self, ctx) -> None:
+        out = {
+            'task_list': list(self.task_list.value),
+            'result': self.results.value,
+            'text': self.text.value
+        }
+        self.content.value = json.dumps(out)
