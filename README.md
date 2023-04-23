@@ -1,8 +1,8 @@
 # GPT Agent Toolkit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/XpressAI/Xircuits)](https://github.com/XpressAI/Xircuits/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/XpressAI/Xircuits)](https://github.com/XpressAI/Xircuits/issues)
+[![GitHub stars](https://img.shields.io/github/stars/XpressAI/xai-gpt-agent-toolkit)](https://github.com/XpressAI/xai-gpt-agent-toolkit/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/XpressAI/xai-gpt-agent-toolkit)](https://github.com/XpressAI/xai-gpt-agent-toolkit/issues)
 [![XpressAI Discord](https://img.shields.io/discord/906370139077881997)](https://discord.gg/vsSRC39b)
 
 Welcome to the **GPT Agent Toolkit**! This toolkit provides a comprehensive set of Xircuits components that allow you to experiment with and create Collaborative Large Language Model-based automatons (Agents) in the style of [BabyAGI](https://github.com/yoheinakajima/babyagi) and [Auto-GPT](https://github.com/Torantulino/Auto-GPT). By default, the toolkit comes with BabyAGI agents, but it is designed to be easily customizable with your own prompts.
