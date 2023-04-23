@@ -597,7 +597,7 @@ class NlpTool(Component):
 TOOL_SPEC_PYTHON = """
 Execute python code in a virtual environment.  
 Use by writing the code within markdown code blocks. 
-Automate the browser with playwright.  You *MUST* use the following code and avoid headless mode:`playwright.chromium.connect_over_cdp("http://localhost:9222")`
+Automate the browser with playwright.
 The environment has the following pip libraries installed: {packages}
 Example: TOOL: python-exec
 ```
@@ -649,9 +649,6 @@ class ExecutePythonTool(Component):
             for line in lines[1:]:
                 code.append(line + "\n")
         
-        code = [line.replace(".launch(headless=False)", '.connect_over_cdp("http://localhost:9222")') for 
-                line in code]
-
         print(f"Will run pip operations: {pip_operations}")
         tool_code = '\n'.join(code)
         print(f"Will run the code: {tool_code}")
