@@ -949,3 +949,20 @@ class OutputAgentStatus(Component):
             'text': self.text.value
         }
         self.content.value = json.dumps(out)
+
+        
+@xai_component
+class Confirm(Component):
+    """Pauses the python process and asks the user to enter Y/N to continue.
+    
+    """
+    prompt: InArg[str]
+    decision: OutArg[bool]
+
+    def execute(self, ctx) -> None:
+        prompt = self.prompt.value if self.prompt.value else 'Continue?'
+        response = input(prompt + '(y/N)')
+        if response == 'y' or response == 'Y':
+            self.decision.value = True
+        else:
+            self.decision.value = False
