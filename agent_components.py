@@ -49,7 +49,6 @@ This result was based on this task description: {task_name}.
 These are incomplete tasks: {task_list}.
 Based on the result, create new tasks to be completed by the AI system that do not overlap with incomplete tasks.
 Return the tasks as an array.
-If the objective is achieved return "FINISHED"
 """
 
 DEFAULT_TASK_PRIORITIZER_PROMPT = """
@@ -179,9 +178,6 @@ class TaskCreatorAgent(Component):
         response = llm_call(self.model.value, prompt)
         new_tasks = response.split('\n')
         print("New tasks: ", new_tasks)
-        if "FINISHED" in new_tasks:
-            self.new_tasks.value = []
-            return
 
         task_id = self.task.value["task_id"]
         task_id_counter = extract_task_number(task_id, self.task_list)
