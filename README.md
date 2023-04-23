@@ -121,7 +121,7 @@ pip install xircuits
 2. Launch xircuits-components tool to install the base component library
 
 ```bash
-xircuits-components
+xircuits-components --branch=v1.7.1
 ```
 
 
