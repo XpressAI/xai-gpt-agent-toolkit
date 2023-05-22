@@ -108,6 +108,7 @@ mkdir project
 cd project
 python3 -m venv venv
 source ./venv/bin/activate
+git init .
 ```
 
 ### Installation
@@ -121,9 +122,10 @@ pip install xircuits
 2. Launch xircuits-components tool to install the base component library
 
 ```bash
-xircuits-components --branch=v1.7.1
+xircuits-components
 ```
 
+Ignore the 
 
 3. Install Vecto (if using vecto)
 
@@ -136,7 +138,6 @@ pip install git+https://github.com/XpressAI/vecto-python-sdk.git
 
 ```bash
 
-git init .
 git submodule add https://github.com/XpressAI/xai-openai xai_components/xai_openai
 git submodule add https://github.com/XpressAI/xai-gpt-agent-toolkit.git xai_components/xai_gpt_agent_toolkit
 
