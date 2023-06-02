@@ -156,6 +156,20 @@ def extract_task_number(task_id, task_list):
 
 @xai_component
 class TaskCreatorAgent(Component):
+    """Creates new tasks based on given model, prompt, and objectives.
+
+    #### inPorts:
+    - objective: Objective for task creation.
+    - prompt: Prompt string for the AI model.
+    - model: AI model used for task creation.
+    - result: Result of the previous tasks.
+    - task: Current task information.
+    - task_list: List of all tasks.
+
+    #### outPorts:
+    - new_tasks: list of newly created tasks.
+    """
+
     objective: InCompArg[str]
     prompt: InArg[str]
     model: InArg[str]
@@ -190,6 +204,18 @@ class TaskCreatorAgent(Component):
 
 @xai_component
 class TaskPrioritizerAgent(Component):
+    """Prioritizes tasks based on given model, prompt, and objectives.
+
+    #### inPorts:
+    - objective: Objective for task prioritization.
+    - prompt: Prompt string for the AI model.
+    - model: AI model used for task prioritization.
+    - task_list: List of all tasks.
+
+    #### outPorts:
+    - prioritized_tasks: Prioritized list of tasks.
+    """
+
     objective: InCompArg[str]
     prompt: InArg[str]
     model: InArg[str]
@@ -220,6 +246,21 @@ class TaskPrioritizerAgent(Component):
 
 @xai_component
 class TaskExecutorAgent(Component):
+    """Executes tasks based on given model, prompt, tools, and memory.
+
+    #### inPorts:
+    - objective: Objective for task execution.
+    - prompt: Prompt string for the AI model.
+    - model: AI model used for task execution.
+    - tasks: Queue of tasks to be executed.
+    - tools: List of tools available for task execution.
+    - memory: Memory context for task execution.
+
+    #### outPorts:
+    - action: Executed action.
+    - task: Task information.
+    """
+
     objective: InCompArg[str]
     prompt: InArg[str]
     model: InArg[str]
@@ -267,6 +308,21 @@ class TaskExecutorAgent(Component):
 
 @xai_component
 class TaskCriticAgent(Component):
+    """Critiques an executed task's action using an AI model.
+
+    #### inPorts:
+    - prompt: The base string that the AI model uses to critique the task action.
+    - objective: The overall objective that should guide task critique.
+    - model: The AI model that generates the critique.
+    - memory: The current context memory, used for retrieving relevant information for task critique.
+    - tools: The list of tools available for task critique.
+    - action: The executed action that is to be critiqued.
+    - task: The current task information.
+
+    #### outPorts:
+    - updated_action: The updated action after the model's critique.
+    """
+
     prompt: InArg[str]
     objective: InArg[str]
     model: InArg[str]
@@ -302,6 +358,18 @@ class TaskCriticAgent(Component):
 
 @xai_component
 class ToolRunner(Component):
+    """Executes a tool based on the given action.
+
+    #### inPorts:
+    - action: The action that determines which tool should be executed.
+    - memory: The current context memory, used for updating the result of tool execution.
+    - task: The current task information.
+    - tools: The list of tools available for execution.
+
+    #### outPorts:
+    - result: The result after running the tool.
+    """
+
     action: InArg[str]
     memory: InCompArg[Memory]
     task: InArg[dict]
@@ -330,6 +398,15 @@ class ToolRunner(Component):
 
 @xai_component
 class CreateTaskList(Component):
+    """Component that creates an task list based on `initial_task`. 
+    If no initial task provided, the first task would be "Develop a task list".
+
+    #### inPorts:
+    - initial_task: The first task to be added to the task list.
+
+    #### outPorts:
+    - task_list: The created task list with the initial task.
+    """
     initial_task: InArg[str]
     task_list: OutArg[deque]
 
@@ -361,6 +438,15 @@ sqlite OUTPUT:
 
 @xai_component
 class SqliteTool(Component):
+    """Component that performs SQL queries against an SQLite database.
+
+    #### inPorts:
+    - path: The path to the SQLite database.
+
+    #### outPorts:
+    - tool_spec: The specification of the SQLite tool, including its capabilities and requirements.
+    """
+
     path: InArg[str]
     tool_spec: OutArg[dict]
 
@@ -429,6 +515,17 @@ browser OUTPUT:
 
 @xai_component
 class BrowserTool(Component):
+    """A component that implements a browser tool.
+    Uses the Playwright library to interact with the browser.
+    Capable of saving screenshots and writing to files directly from the browser context.
+
+    #### inPorts:
+    - cdp_address: The address to the Chrome DevTools Protocol (CDP), allowing interaction with a Chrome instance.
+
+    #### outPorts:
+    - tool_spec: The specification of the browser tool.
+    """
+
     cdp_address: InArg[str]
     tool_spec: OutArg[dict]
 
@@ -519,6 +616,16 @@ Summary appears here.
 
 @xai_component
 class NlpTool(Component):
+    """Natural Language Processing (NLP) tool. Perform NLP operations within the browser context. 
+    Enables the extraction of webpage content and further NLP analysis via a language model,
+    in this case, gpt-3.5-turbo.    
+
+    #### inPorts:
+    - cdp_address: The address to the Chrome DevTools Protocol (CDP).
+
+    #### outPorts:
+    - tool_spec: The specification of the NLP tool.
+    """
     cdp_address: InArg[str]
     tool_spec: OutArg[dict]
 
@@ -612,6 +719,17 @@ STDERR:
 
 @xai_component
 class ExecutePythonTool(Component):
+    """
+    Executes Python code and pip operations that are supplied as a string. 
+    It extracts the Python code and pip commands, runs them, and returns their output or errors. 
+
+    #### inPorts:
+    - path: The path to the python sciprt.
+
+    #### outPorts:
+    - tool_spec: The specification of the Python tool, including its capabilities and requirements.
+    """
+    
     file_name: InArg[str]
     tool_spec: OutArg[dict]
 
@@ -682,6 +800,15 @@ Yes I would.
 
 @xai_component
 class PromptUserTool(Component):
+    """A component that enables interaction with a user by prompting for inputs.
+    Prints a prompt message to the user and waits for input. 
+    The user's response is then returned by the function.
+    **Note**: If you use this component, run the compiled script from a terminal.
+
+    #### outPorts:
+    - tool_spec: The specification of the PromptUser tool.
+    """
+
     tool_spec: OutArg[dict]
 
     def execute(self, ctx) -> None:
@@ -710,6 +837,18 @@ Thoughts go here.
 
 @xai_component
 class ScratchPadTool(Component):
+    """A component that creates and manages a 'scratch pad' for storing and summarizing information within the xai framework.
+    The component is initialized with a file name to use as the scratch pad. During execution, 
+    it writes to this file and provides a method `run_tool` that updates the contents of the file and 
+    generates a summary of the current contents using the gpt-3.5-turbo language model.
+
+    #### inPorts:
+    - file_name: The name of the file that will be used as the scratch pad.
+
+    #### outPorts:
+    - tool_spec: The specification of the ScratchPad tool.
+    """
+
     file_name: InArg[str]
     tool_spec: OutArg[dict]
             
@@ -890,6 +1029,16 @@ class PineconeMemory(Component):
 
 @xai_component
 class Toolbelt(Component):
+    """A component that aggregates various GPT Agent tool specifications into a unified toolbelt.
+    You can add more tools if needed by simply adding it as an additional `InArg`. Ensure to reload node after.
+
+    #### inPorts:
+    - tool1, tool2, tool3, tool4, tool5: Specifications for up to five tools to be included in the toolbelt.
+    
+    #### outPorts:
+    - toolbelt_spec: The unified specification for the toolbelt, including the specifications for all included tools.
+    """
+
     tool1: InArg[dict]
     tool2: InArg[dict]
     tool3: InArg[dict]
@@ -916,6 +1065,12 @@ class Toolbelt(Component):
 
 @xai_component
 class Sleep(Component):
+    """A simple component that pauses execution for a specified number of seconds.
+
+    #### inPorts:
+    - seconds: The number of seconds to pause execution.
+    """
+
     seconds: InArg[int]
 
     def execute(self, ctx) -> None:
@@ -923,6 +1078,15 @@ class Sleep(Component):
 
 @xai_component
 class ReadFile(Component):
+    """A component that reads the contents of a file.
+
+    #### inPorts:
+    - file_name: The name of the file to read.
+
+    #### outPorts:
+    - content: The contents of the file as a string.
+    """
+
     file_name: InCompArg[str]
     content: OutArg[str]
     
@@ -932,8 +1096,19 @@ class ReadFile(Component):
             s = "\n".join(f.readlines())
         self.content.value = s
 
-@xai_component
+
 class OutputAgentStatus(Component):
+    """A component that generates a status output for an agent.
+
+    #### inPorts:
+    - task_list: A list of tasks.
+    - text: The text input.
+    - results: The result of task execution.
+
+    #### outPorts:
+    - content: The JSON-encoded status of the agent.
+    """
+
     task_list: InCompArg[deque]
     text: InArg[str]
     results: InArg[str]
@@ -951,8 +1126,9 @@ class OutputAgentStatus(Component):
 @xai_component
 class Confirm(Component):
     """Pauses the python process and asks the user to enter Y/N to continue.
-    
+    **Note**: If you use this component, run the compiled script from a terminal.
     """
+
     prompt: InArg[str]
     decision: OutArg[bool]
 
