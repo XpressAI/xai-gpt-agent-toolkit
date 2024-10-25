@@ -1,3 +1,4 @@
+import sys
 import abc
 from collections import deque
 import re
@@ -8,6 +9,7 @@ from dotenv import load_dotenv
 import numpy as np
 import os
 import openai
+from openai import OpenAI
 import requests
 import sqlite3
 import subprocess
@@ -91,9 +93,10 @@ def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int 
     
     while True:
         try:
-            if model == 'gpt-3.5-turbo' or model == 'gpt-4':
+            if model == 'gpt-3.5-turbo' or model == 'gpt-4o-mini':
+                client = OpenAI()
                 messages = [{"role": "system", "content": prompt}]
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model=model,
                     messages=messages,
                     temperature=temperature,
@@ -104,9 +107,9 @@ def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int 
                 return response.choices[0].message.content.strip()
             elif model.startswith("rwkv"):
                 # Use proxy.
-                if not openai.proxy: raise Exception("No proxy set")
+                if not openai.proxies: raise Exception("No proxy set")
                 messages = [{"role": "system", "content": prompt}]
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model=model,
                     messages=messages,
                     temperature=temperature,
@@ -122,10 +125,10 @@ def llm_call(model: str, prompt: str, temperature: float = 0.5, max_tokens: int 
                 return result.stdout.strip()
             else:
                 raise Exception(f"Unknown model {model}")
-        except openai.error.RateLimitError:
+        except openai.RateLimitError:
             print("Rate limit error, sleeping for 10 seconds...")
             time.sleep(10)
-        except openai.error.ServiceUnavailableError:
+        except openai.APIError:
             print("Service unavailable error, sleeping for 10 seconds...")
             time.sleep(10)
         else:
@@ -902,9 +905,7 @@ class VectoMemoryImpl(Memory):
 
 def get_ada_embedding(text):
     s = text.replace("\n", " ")
-    return openai.Embedding.create(input=[s], model="text-embedding-ada-002")[
-        "data"
-    ][0]["embedding"]
+    return openai.embeddings.create(input=[s], model="text-embedding-ada-002").data[0].embedding
 
 
 class PineconeMemoryImpl(Memory):
@@ -1139,3 +1140,21 @@ class Confirm(Component):
             self.decision.value = True
         else:
             self.decision.value = False
+
+
+
+@xai_component
+class TestCounter(Component):
+    
+    def execute(self, ctx) -> None:
+        
+        if ctx.get("count") == None:
+            ctx["count"] = 1 
+        else:
+            count = ctx.get("count")
+            count += 1
+            print(count)
+            ctx["count"] = count
+            if count == 3:
+                sys.exit(0)
+    
