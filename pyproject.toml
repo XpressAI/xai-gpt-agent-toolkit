@@ -1,0 +1,22 @@
+[project]
+name = "xai-gpt-agent-toolkit"
+version = "0.1.0"
+description = "Xircuits component library for GPT-agent."
+authors = [{ name = "XpressAI", email = "eduardo@xpress.ai" }]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/XpressAI/xai-gpt-agent-toolkit"
+keywords = ["xircuits", "GPT", "agent toolkit", "AI workflows", "automation"]
+
+dependencies = [
+    "python-dotenv==1.0.1",
+    "requests",
+    "numpy",
+    "playwright==1.48.0",
+    "openai==1.52.0"
+]
+
+# Xircuits-specific configurations
+[tool.xircuits]
+default_example_path = "examples/babyagi.xircuits"
+requirements_path = "requirements.txt"

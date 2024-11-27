@@ -1,0 +1,120 @@
+name: Run Xircuits Workflows Test
+
+on:
+
+  workflow_dispatch:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+    env:
+      TEST_XIRCUITS: |
+        tests/babyagi_test.xircuits
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Create virtual environment
+      run: |
+        python -m venv venv
+        echo "${{ github.workspace }}/venv/bin" >> $GITHUB_PATH
+
+    - name: Install xircuits in virtual environment
+      run: pip install xircuits
+
+    - name: Set Environment Variables
+      run: |
+        LIBRARY_NAME=$(echo "${GITHUB_REPOSITORY##*/}" | sed 's/-/_/g')
+        echo "LIBRARY_NAME=$LIBRARY_NAME" >> $GITHUB_ENV
+        COMPONENT_LIBRARY_PATH="xai_components/${LIBRARY_NAME}"
+        echo "COMPONENT_LIBRARY_PATH=$COMPONENT_LIBRARY_PATH" >> $GITHUB_ENV
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "BRANCH_NAME=${{ github.head_ref }}" >> $GITHUB_ENV
+        else
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+        fi
+
+    - name: List Xircuits
+      run: xircuits list
+
+    - name: Install Xircuits Library
+      run: xircuits install openai
+
+    - name: Clone Repository
+      run: |
+        rm -rf ${{ env.COMPONENT_LIBRARY_PATH }}
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          REPO_URL="${{ github.event.pull_request.head.repo.clone_url }}"
+        else
+          REPO_URL="https://github.com/${{ github.repository }}"
+        fi
+        git clone -b ${{ env.BRANCH_NAME }} $REPO_URL ${{ env.COMPONENT_LIBRARY_PATH }}
+
+    - name: Install Component Library
+      run: |
+        if [ -f "${{ env.COMPONENT_LIBRARY_PATH }}/requirements.txt" ]; then
+          echo "requirements.txt found, installing dependencies..."
+          pip install -r ${{ env.COMPONENT_LIBRARY_PATH }}/requirements.txt
+        else
+          echo "requirements.txt not found."
+        fi
+
+    - name: Test .xircuits Workflows
+      env:
+          OPENAI_API_KEY: ${{ secrets.API_KEY }}
+      run: |
+          export PYTHONPATH="${GITHUB_WORKSPACE}:${PYTHONPATH}"
+          LOG_FILE="${GITHUB_WORKSPACE}/workflow_logs.txt"
+          TEST_FILES=$(echo "$TEST_XIRCUITS" | tr '\n' ' ')
+
+          echo "Repository: $LIBRARY_NAME" > $LOG_FILE
+          echo "Branch: $BRANCH_NAME" >> $LOG_FILE
+          echo -e "Testing Files:\n$TEST_FILES" >> $LOG_FILE
+
+          IFS=' ' read -r -a FILE_ARRAY <<< "$TEST_FILES"
+          FAIL=0
+
+          if [ ${#FILE_ARRAY[@]} -eq 0 ]; then
+          echo "No .xircuits files specified for testing." | tee -a $LOG_FILE
+          else
+          for file in "${FILE_ARRAY[@]}"; do
+              FULL_PATH="${COMPONENT_LIBRARY_PATH}/${file}"
+              if [ -f "$FULL_PATH" ]; then
+              WORKFLOW_LOG_FILE="${FULL_PATH%.*}_workflow_log.txt"
+              echo -e "\n\nProcessing $FULL_PATH..." | tee -a $LOG_FILE
+
+              xircuits compile "$FULL_PATH" "${FULL_PATH%.*}.py" 2>&1 | tee -a $LOG_FILE
+              python "${FULL_PATH%.*}.py" 2>&1 | tee -a $WORKFLOW_LOG_FILE
+              echo "$FULL_PATH processed successfully" | tee -a $LOG_FILE
+
+              cat "$WORKFLOW_LOG_FILE" | tee -a $LOG_FILE
+              else
+              echo "Specified file $FULL_PATH does not exist" | tee -a $LOG_FILE
+              FAIL=1
+              fi
+          done
+          fi
+
+          if [ $FAIL -ne 0 ]; then
+          echo "One or more workflows failed or did not finish as expected." | tee -a $LOG_FILE
+          exit 1
+          else
+          echo "All workflows processed successfully." | tee -a $LOG_FILE
+          fi
+
+    - name: Upload log file
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.LIBRARY_NAME }}-validation-workflow-${{ matrix.python-version }}
+        path: ${{ github.workspace }}/workflow_logs.txt
