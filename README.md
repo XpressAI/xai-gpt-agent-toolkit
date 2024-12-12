@@ -1,195 +1,107 @@
-# GPT Agent Toolkit
+<p align="center">
+  <a href="https://github.com/XpressAI/xircuits/tree/master/xai_components#xircuits-component-library-list">Component Libraries</a> •
+  <a href="https://github.com/XpressAI/xircuits/tree/master/project-templates#xircuits-project-templates-list">Project Templates</a>
+  <br>
+  <a href="https://xircuits.io/">Docs</a> •
+  <a href="https://xircuits.io/docs/Installation">Install</a> •
+  <a href="https://xircuits.io/docs/category/tutorials">Tutorials</a> •
+  <a href="https://xircuits.io/docs/category/developer-guide">Developer Guides</a> •
+  <a href="https://github.com/XpressAI/xircuits/blob/master/CONTRIBUTING.md">Contribute</a> •
+  <a href="https://www.xpress.ai/blog/">Blog</a> •
+  <a href="https://discord.com/invite/vgEg2ZtxCw">Discord</a>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/XpressAI/xai-gpt-agent-toolkit)](https://github.com/XpressAI/xai-gpt-agent-toolkit/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/XpressAI/xai-gpt-agent-toolkit)](https://github.com/XpressAI/xai-gpt-agent-toolkit/issues)
-[![XpressAI Discord](https://img.shields.io/discord/906370139077881997)](https://discord.gg/K456gAfPNe)
 
-Welcome to the **GPT Agent Toolkit**! This toolkit provides a comprehensive set of Xircuits components that allow you to experiment with and create Collaborative Large Language Model-based automatons (Agents) in the style of [BabyAGI](https://github.com/yoheinakajima/babyagi) and [Auto-GPT](https://github.com/Torantulino/Auto-GPT). By default, the toolkit comes with BabyAGI agents, but it is designed to be easily customizable with your own prompts.
 
-![BabyAGI demo](https://github.com/XpressAI/xai-gpt-agent-toolkit/blob/main/demo.gif)
+
+
+<p align="center"><i>Xircuits Component Library for GPT Agent Toolkit – Empower your workflows with intelligent task management and execution tools.</i></p>
+
+---
+## Xircuits Component Library for GPT Agent Toolkit
+
+Effortlessly integrate GPT-powered agents into Xircuits workflows. This library enables dynamic task creation, prioritization, execution, and critique, alongside tools for interaction, memory management, and contextual understanding.
 
 ## Table of Contents
-- [Features](#features)
-- [Ideas](#ideas)
-- [Getting Started](#getting-started)
-  - [Shameless Plug](#shameless-plug)
-  - [Prerequisites](#prerequisites)
-  - [Software Prerequisites](#software-prerequisites)
-  - [API Prerequisites](#api-prerequisites)
-  - [Create a project](#create-a-project)
-  - [Installation](#installation)
-- [Usage](#usage)
-  - [Basic Usage](#basic-usage)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
 
-## Features
-- Pre-built BabyAGI agents
-- Support for both [Vecto](https://www.vecto.ai) and [Pinecone](https://www.pinecone.io) Memories
-- Support for Tools such as Python Exec, and SQLLite
-- Support for both OpenAI and LLAMA models
-- Open-source and community-driven
+- [Preview](#preview)
+- [Prerequisites](#prerequisites)
+- [Main Xircuits Components](#main-xircuits-components)
+- [Try the Examples](#try-the-examples)
+- [Installation](#installation)
 
-## Ideas
+## Preview
 
-Here are some ideas that you could try relatively easily with Xircuits.
+### The Example:
 
-1. Make a critic agent that updates the objective to be more effective.
-2. Have the agents produce a status report on Slack and update the objective based on your reply.
-3. Upload a large image dataset on Vecto with image descriptions giving your agent sight.
-4. Connect to Whisper and have a daily standup meeting with the agent.
-5. Make 2 BabyAGIs and have 1 critic decide which action to actually perform.
+<img src="https://github.com/user-attachments/assets/bf4fc849-477f-4ec7-af18-a94cb39c6186" alt="baby_agi" />
 
-## Getting Started
+### The Result:
 
-These instructions will help you set up the GPT Agent Toolkit on your local machine.
+<img src="https://github.com/user-attachments/assets/4c7bcb59-6864-4bd9-992b-ff0ebb44331b" alt="baby_agi_result"/>
 
-This is a component library so you don't need to clone this directly. Instead install
-Xircuits and install this component library into it.
+## Prerequisites
 
-### Shameless plug
+Before you begin, you will need the following:
 
-If the following is too much work or too complicated.  Sign up to the Xpress AI Platform waitlist
-to get access to a single app that has everything you need to get started.
-
-[Join the Xpress AI Platform Waitlist](https://xpress.ai/join-waitlist)
+1. Python3.9+.
+2. Xircuits.
+3. API key for OpenAI
 
 
-### Software Prerequisites
 
-Before you begin, make sure you have the following software installed on your system:
+## Main Xircuits Components
 
-- Python 3.8 or higher
-- pip (Python package installer)
-- git 
+### TaskCreatorAgent Component:
+Creates new tasks dynamically based on objectives, previous results, and the list of incomplete tasks.
 
-### API Prerequisites
+<img src="https://github.com/user-attachments/assets/72d5c946-e5f4-4497-804f-4cb3713f181b" alt="TaskCreatorAgent" width="200" height="200" />
 
-You will need an API key from Open AI to use GPT-3.5 and either a Vecto or Pinecone account for agent memory.
+### ToolRunner Component:
+Executes tools specified within tasks and stores the results in memory for future reference.
 
-Create a .env file and put your API keys into the respective lines.
+<img src="https://github.com/user-attachments/assets/a5a88220-0d61-4ea9-aeb6-fb3b552f5de0" alt="ToolRunner" width="200" height="150" />
 
-```
-OPENAI_API_KEY=<Your OpenAI API Key here>
-OPENAI_ORG=<Your OpenAI Org (if you have one)>
-```
+### TaskPrioritizerAgent Component:
+Reorders and prioritizes tasks to align with the overall objective efficiently.
 
-With the latest version you no longer need Vector or Pinecone to get started, but if you want to use them
-add one of the following credentials.
+### TaskExecutorAgent Component:
+Executes tasks using specified tools, memory, and context to achieve desired outcomes.
 
-For Vecto users:
-```
-VECTO_API_KEY=<An ACCOUNT_MANAGEMENT Vecto key>
-```
+### TaskCriticAgent Component:
+Reviews and critiques executed actions to ensure accuracy and alignment with the task objective.
 
-For Pinecone users:
-```
-PINECONE_API_KEY=<Your Pinecone API key>
-PINECONE_ENVIRONMENT=<Your Pinecone environment>
-```
+### CreateTaskList Component:
+Initializes a task list with a default or user-defined initial task.
 
+### ScratchPadTool Component:
+Provides a scratch pad for storing and summarizing intermediate thoughts or insights.
 
-### Create a project
+### PromptUserTool Component:
+Prompts the user for input and captures their responses for use in workflows.
 
-Windows:
+### BrowserTool Component:
+Automates browser interactions for tasks like navigation and data extraction.
+
+### SqliteTool Component:
+Executes SQL queries on an SQLite database and returns the results for further processing.
+
+## Try the Examples
+
+We have provided an example workflow to help you get started with the GPT Agent Toolkit component library. Give it a try and see how you can create custom GPT Agent Toolkit components for your applications.
+
+### BabyAGI Example  
+Explore the babyagi.xircuits workflow. This example demonstrates an iterative approach to task management, utilizing AI to execute, create, and prioritize tasks dynamically in a loop.
+
+## Installation
+To use this component library, ensure that you have an existing [Xircuits setup](https://xircuits.io/docs/main/Installation). You can then install the GPT Agent Toolkit library using the [component library interface](https://xircuits.io/docs/component-library/installation#installation-using-the-xircuits-library-interface), or through the CLI using:
 
 ```
-mkdir project
-cd project
-python -m venv venv
-venv\Scripts\activate
+xircuits install gpt-agent-toolkit
 ```
-
-Linux of macOS:
-```bash
-mkdir project
-cd project
-python3 -m venv venv
-source ./venv/bin/activate
-git init .
+You can also do it manually by cloning and installing it:
 ```
-
-### Installation
-
-1. Install xircuits
-
-```bash
-pip install xircuits
-```
-
-2. Launch xircuits-components tool to install the base component library
-
-```bash
-xircuits-components
-```
-
-Ignore the 
-
-3. Install Vecto (if using vecto)
-
-```bash
-pip install git+https://github.com/XpressAI/vecto-python-sdk.git
-```
-
-
-4. Add the OpenAI and GPT Agent Toolkit component libraries
-
-```bash
-
-git submodule add https://github.com/XpressAI/xai-openai xai_components/xai_openai
-git submodule add https://github.com/XpressAI/xai-gpt-agent-toolkit.git xai_components/xai_gpt_agent_toolkit
-
-pip install -r xai_components/xai_openai/requirements.txt
+# base Xircuits directory
+git clone https://github.com/XpressAI/xai-gpt-agent-toolkit xai_components/xai_gpt_agent_toolkit
 pip install -r xai_components/xai_gpt_agent_toolkit/requirements.txt
-
 ```
-
-5. Run the playwright installer to enable the Browser tool:
-
-```bash
-playwright install
-```
-
-## Usage
-
-### Basic Usage
-
-1. Copy the sample BabyAGI Xircuits file to your project folder.
-
-```bash
-cp xai_components/xai_gpt_agent_toolkit/babyagi.xircuits .
-```
-
-2. Start JupyterLab/Xircuits by running:
-
-```bash
-xircuits
-```
-
-3. Use the printed out URLs to browse to http://localhost:8888/lab and double click the babyagi.xiruits file.
-
-4. Click play to watch it go and try to make the world a better place.
-
-### Browser Access/Usage
-
-For the browser tool to work in the most useful way, you must start Chrome in remote debugging mode before
-starting your agents. To do that run the following in powershell
-
-```powershell
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222
-```
-
-## Contributing
-
-We appreciate your interest in contributing to the GPT Agent Toolkit! Any new tools or prompts are welcome.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE.md file for details.
-
-## Acknowledgements
-
-- The team behind Xircuits.  Give the project a star if it looks interesting!
-- The developers of [BabyAGI](https://github.com/yoheinakajima/babyagi) and [AutoGPT](https://github.com/Torantulino/Auto-GPT) for their groundbreaking work on large language model-based agents
