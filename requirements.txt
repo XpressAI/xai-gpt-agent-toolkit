@@ -2,4 +2,4 @@ python-dotenv==1.0.1
 requests
 numpy
 playwright==1.48.0
-openai==1.52.0
+openai==1.57.2
