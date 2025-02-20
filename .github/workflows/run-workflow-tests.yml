@@ -44,8 +44,8 @@ jobs:
           echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
         fi
 
-    - name: List Xircuits
-      run: xircuits list
+    - name: Init Xircuits
+      run: xircuits init
 
     - name: Install Xircuits Library
       run: xircuits install openai
