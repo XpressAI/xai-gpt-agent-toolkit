@@ -13,7 +13,7 @@ dependencies = [
     "requests",
     "numpy",
     "playwright==1.48.0",
-    "openai==1.79.0"
+    "openai==1.84"
 ]
 
 # Xircuits-specific configurations

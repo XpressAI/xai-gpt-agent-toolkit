@@ -1,5 +1,5 @@
 numpy==1.26.4
-openai==1.79.0
+openai==1.84.0
 playwright==1.48.0
 python-dotenv==1.0.1
 requests==2.31.0
